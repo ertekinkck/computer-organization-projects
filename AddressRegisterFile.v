@@ -16,7 +16,6 @@ module AddressRegisterFile(
     Register PC(.I(I), .FunSel(FunSel), .E(~RegSel[2]), .Clock(Clock), .Q(PC_reg));
     Register AR(.I(I), .FunSel(FunSel), .E(~RegSel[1]), .Clock(Clock), .Q(AR_reg));
     Register SP(.I(I), .FunSel(FunSel), .E(~RegSel[0]), .Clock(Clock), .Q(SP_reg));
- 
   
     always @(*) begin
         case (OutCSel)
@@ -30,7 +29,7 @@ module AddressRegisterFile(
         case (OutDSel)
           2'b00: OutD <= PC_reg;
           2'b01: OutD <= PC_reg;
-          2'b10: OutC <= AR_reg;
+          2'b10: OutD <= AR_reg;
           2'b11: OutD <= SP_reg;
           default: OutD <= 8'b0;
         endcase

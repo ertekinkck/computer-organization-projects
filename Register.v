@@ -8,13 +8,17 @@ module Register(
   output reg [15:0] Q
 );
 
+initial begin
+    Q = 16'h0000;
+end
+
     always @(*) begin
       if (E) begin
         case (FunSel)
           3'b000: Q = Q - 1'b1; // Q = Q-1: Decrement
           3'b001: Q = Q + 1'b1; // Q = Q+1: Increment
           3'b010: Q = I;        // Q = I: Load
-          3'b011: Q = 8'b0000_0000;   // Clear
+          3'b011: Q = 16'h0000;   // Clear
           3'b100: Q = {8'b0000_0000, I[7:0]}; // Q (15-8) ? Clear, Q (7-0) ? I (7-0) (Write Low)
           3'b101: Q = {Q[15:8], I[7:0]}; // Q (7-0) ? I (7-0) (Only Write Low)
           3'b110: Q = {I[15:8], Q[7:0]}; // Q (15-8) ? I (7-0) (Only Write High)

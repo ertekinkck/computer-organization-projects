@@ -15,27 +15,32 @@ module RegisterFile(
     wire [15:0] q_R1, q_R2, q_R3, q_R4;
     wire [15:0] q_S1, q_S2, q_S3, q_S4;
 
+initial begin
+    OutA = 16'h0000;
+    OutB = 16'h0000;
+end
+
     always @(*) begin
           
     case(OutASel)
-        3'b000: OutA <= q_R1;
-        3'b001: OutA <= q_R2;
-        3'b010: OutA <= q_R3;
-        3'b011: OutA <= q_R4;
-        3'b100: OutA <= q_S1;
-        3'b101: OutA <= q_S2;
-        3'b110: OutA <= q_S3;
-        3'b111: OutA <= q_S4;
+        3'b000: OutA = q_R1;
+        3'b001: OutA = q_R2;
+        3'b010: OutA = q_R3;
+        3'b011: OutA = q_R4;
+        3'b100: OutA = q_S1;
+        3'b101: OutA = q_S2;
+        3'b110: OutA = q_S3;
+        3'b111: OutA = q_S4;
         endcase
     case(OutBSel)
-        3'b000: OutB <= q_R1;
-        3'b001: OutB <= q_R2;
-        3'b010: OutB <= q_R3;
-        3'b011: OutB <= q_R4;
-        3'b100: OutB <= q_S1;
-        3'b101: OutB <= q_S2;
-        3'b110: OutB <= q_S3;
-        3'b111: OutB <= q_S4;
+        3'b000: OutB = q_R1;
+        3'b001: OutB = q_R2;
+        3'b010: OutB = q_R3;
+        3'b011: OutB = q_R4;
+        3'b100: OutB = q_S1;
+        3'b101: OutB = q_S2;
+        3'b110: OutB = q_S3;
+        3'b111: OutB = q_S4;
         endcase 
     end
     

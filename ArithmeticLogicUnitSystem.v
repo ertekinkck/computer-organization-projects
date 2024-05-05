@@ -23,17 +23,15 @@ endmodule
 
  module MUX_2(
     input wire [15:0] I1,
-    input wire [15:0] I2,
     input wire Clock,
     input wire selector,
-    
-    output reg [7:0] MUX_output
+    output reg [15:0] MUX_output
 );
     always @(*)begin
-    case(selector)
-    1'b0: MUX_output <= I1[7:0];
-    1'b1: MUX_output <= I2[7:0]; 
-    endcase
+        case(selector)
+            1'b0: MUX_output <= I1[7:0];
+            1'b1: MUX_output <= I1[15:8]; 
+        endcase
     end
 endmodule
 
@@ -70,17 +68,17 @@ module ArithmeticLogicUnitSystem(
     
     wire [15:0] OutA, OutB;
     wire [15:0] IROut;
-    wire [15:0] MuxAOut, MuxBOut, MuxCOut, ALUOut, OutC, Address;
+    wire [15:0] MuxAOut, MuxBOut, ALUOut, OutC, Address, MuxCOut;
     wire [7:0] MemOut;
     wire [3:0] ALUOutFlag;
 
     RegisterFile RF(.Clock(Clock), .I(MuxAOut), .FunSel(RF_FunSel), .RegSel(RF_RegSel), .ScrSel(RF_ScrSel), .OutASel(RF_OutASel), .OutBSel(RF_OutBSel), .OutA(OutA), .OutB(OutB));
     InstructionRegister IR(.Clock(Clock), .LH(IR_LH), .IROut(IROut), .I(MemOut), .Write(IR_Write));
-    MUX_4 MuxA(.Clock(Clock), .I1(ALUOut), .I2(OutC), .I3(IROut[7:0]), .I4(MemOut), .selector(MuxASel), .MUX_output(MuxAOut));
-    MUX_4 MuxB(.Clock(Clock), .I1(ALUOut), .I2(OutC), .I3(IROut[7:0]), .I4(MemOut), .selector(MuxBSel), .MUX_output(MuxBOut));
-    MUX_2 MuxC(.Clock(Clock), .I1(ALUOut), .I2(8'b00000000), .selector(MuxCSel), .MUX_output(MuxCOut));
-    ArithmeticLogicUnit ALU(.A(MuxCOut), .B(OutB), .FunSel(ALU_FunSel), .ALUOut(ALUOut), .FlagsOut(ALUOutFlag), .Clock(Clock), .WF(ALU_WF));
-    Memory MEM(.Clock(Clock), .Address(OutC), .MemOut(MemOut), .WR(Mem_WR), .CS(Mem_CS), .Data(ALUOut));
+    MUX_4 MuxA(.Clock(Clock), .I1(ALUOut), .I2(OutC), .I3(MemOut), .I4(IROut[7:0]), .selector(MuxASel), .MUX_output(MuxAOut));
+    MUX_4 MuxB(.Clock(Clock), .I1(ALUOut), .I2(OutC), .I3(MemOut), .I4(IROut[7:0]), .selector(MuxBSel), .MUX_output(MuxBOut));
+    MUX_2 MuxC(.Clock(Clock), .I1(ALUOut), .selector(MuxCSel), .MUX_output(MuxCOut));
+    ArithmeticLogicUnit ALU(.A(OutA), .B(OutB), .FunSel(ALU_FunSel), .ALUOut(ALUOut), .FlagsOut(ALUOutFlag), .Clock(Clock), .WF(ALU_WF));
+    Memory MEM(.Clock(Clock), .Address(Address), .MemOut(MemOut), .WR(Mem_WR), .CS(Mem_CS), .Data(MuxCOut));
     AddressRegisterFile ARF(.Clock(Clock), .I(MuxBOut), .FunSel(ARF_FunSel), .OutCSel(ARF_OutCSel), .OutDSel(ARF_OutDSel), .RegSel(ARF_RegSel), .OutC(OutC), .OutD(Address));
     
   
