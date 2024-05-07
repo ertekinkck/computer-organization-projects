@@ -14,7 +14,7 @@ endmodule
 module Decoder6to64(Enable,OpDecoderInput,OpDecoderOutput); // input 6 bit, 
     input wire Enable;
     input wire [5:0] OpDecoderInput;
-    output reg [15:0] OpDecoderOutput;
+    output reg [63:0] OpDecoderOutput;
     
     always @(*)
     begin
@@ -91,100 +91,102 @@ module Decoder2to8(
     end  
 endmodule
 
-module CPUSystem(
-    input Clock,
-    input Reset,
-    output reg [7:0] T );  // T is a sequence counter's output
+
+module CPUSystem(input Clock, input Reset, output wire [7:0] T, output wire [15:0] IROut);  
     reg [1:0] ARF_OutCSel, ARF_OutDSel, MuxASel, MuxBSel; 
     reg [2:0] RF_OutASel, RF_OutBSel, RF_FunSel, ARF_FunSel, ARF_RegSel;
     reg [3:0] RF_RegSel, RF_ScrSel;
     reg [4:0] ALU_FunSel;
-    reg IR_LH, IR_Write, Mem_CS, Mem_WR, ALU_WF, MuxCSel;
+    reg  IR_LH, IR_Write, Mem_CS, Mem_WR, ALU_WF, MuxCSel;
+    
+    // New Homework
     reg SCReset;
-    reg  [2:0] TimeDecoderInput;
+    reg [1:0] Rsel;
+    wire [2:0] TimeDecoderInput;
     wire [63:0] D;
-    wire [1:0] RSel;
-    reg  [15:0] temp;
-    wire [7:0] Address;
-
+    
+    reg [1:0] RSel;
+    reg [7:0] Address;
+   
+    reg S;
+    reg IncrementSC;
+    
     ArithmeticLogicUnitSystem _ALUSystem(.Clock(Clock), .RF_OutASel(RF_OutASel), .RF_OutBSel(RF_OutBSel), .RF_FunSel(RF_FunSel), .RF_RegSel(RF_RegSel),
                               .RF_ScrSel(RF_ScrSel), .ALU_FunSel(ALU_FunSel), .ARF_OutCSel(ARF_OutCSel), .ARF_OutDSel(ARF_OutDSel), .ARF_FunSel(ARF_FunSel),
                               .ARF_RegSel(ARF_RegSel), .IR_LH(IR_LH), .IR_Write(IR_Write), .Mem_CS(Mem_CS), .Mem_WR(Mem_WR), .ALU_WF(ALU_WF), .MuxASel(MuxASel),
-                              .MuxBSel(MuxBSel), .MuxCSel(MuxCSel));
-                              
-    Decoder2to8 TimeDecoder(1,TimeDecoderInput, T);
-    SequenceCounter SC(Clock, SCReset, 1'b1, TimeDecoderInput);
-    Decoder6to64 OpDecoderInput(1, _ALUSystem.IR.IR_OUT[15:10], D);
-   
-   initial begin
-        IncrementSC = 1;    
-   end
+                              .MuxBSel(MuxBSel), .MuxCSel(MuxCSel), .IROut(IROut));
+                                        
+      SequenceCounter SC(.Clock(Clock), .Reset(SCReset), .Increment(IncrementSC), .SCOut(TimeDecoderInput));       
+      Decoder2to8 TimeDecoder(.Enable(1'b1),.TimeDecoderInput(TimeDecoderInput), .TimeDecoderOutput(T));
+      Decoder6to64 OpDecoder(.Enable(1'b1), .OpDecoderInput(IROut[15:10]), .OpDecoderOutput(D));      
+                                
+    always @(*) begin
 
-  always @(*) begin
-    if (Reset) begin
-    SCReset = 1;
-    ARF_FunSel = 3'b000;
-    end
-    if (!Reset) begin
-    // Fetch cycle (T0, T1, T2)
-      if (T[0]) begin
-      //dump_input = 1'b0; anlamadÄ±m
-      IR_LH = 1'b0; // low partÄ± seÃ§
-      Mem_WR = 1'b0; // Memory'nin read modunu aÃ§
-      Mem_CS = 1'b0; // Memory'yi enable et
-      ARF_OutDSel = 2'b00; // Memory'nin address kÄ±smÄ±na giden outu iÃ§in PC'yi seÃ§
-      // Increment PC_past and PC
-      ARF_FunSel = 3'b001; // Pc registeri 1 artÄ±r
-      ARF_RegSel <= 3'b011; // PC registerÄ± enable et
-      IncrementSC = 1;
-      //RF_RSel = 4'b0000; anlamadÄ±m
+      if (Reset) begin
+          SCReset = 1;
+          ARF_FunSel = 3'b000;
       end
+      if (!Reset) begin
+      // Fetch cycle (T0, T1, T2)
+          SCReset = 0;   
+          if (T[0]) begin
+              //dump_input = 1'b0; anlamadým
+              // IR(0-7) <-
+              IR_LH = 1'b0; // low partý seç
+              // <- M[PC]
+              Mem_WR = 1'b0; // Memory'nin read modunu aç
+              Mem_CS = 1'b0; // Memory'yi enable et
+              ARF_OutDSel = 2'b00; // Memory'nin address kýsmýna giden outu için PC'yi seç
+              // Increment PC_past and PC
+              ARF_FunSel = 3'b001; // Pc registeri 1 artýr
+              ARF_RegSel <= 3'b011; // PC registerý enable et
+              
+              IncrementSC = 1;
+              //RF_RSel = 4'b0000; anlamadým.
+          end
 
-      if (T[1]) begin
-      // IR(8-15) <-
-      IR_LH = 1'b1;
-      // <- M[PC]
-      Mem_WR = 0; // Memory'nin read modunu aÃ§
-      Mem_CS = 0; // Memory'yi enable et
-      ARF_OutDSel = 2'b00;    
-      // Increment PC_past and PC
-      ARF_FunSel = 3'b001;
-      ARF_RegSel = 3'b011;
+          if (T[1]) begin
+              // IR(8-15) <-
+              IR_LH = 1'b1; // high partý yükle
+              // <- M[PC]
+              Mem_WR = 0; // Memory'nin read modunu aç
+              Mem_CS = 0; // Memory'yi enable et
+              ARF_OutDSel = 2'b00;    
+              // Increment PC_past and PC
+              ARF_FunSel = 3'b001;
+              ARF_RegSel = 3'b011;
 
-      IncrementSC = 1;
-      //RF_RSel = 4'b0000; anlamadÄ±m.
-      end
-           
-      // Memorydeki instructionumuz instruction registera baÅŸarÄ±lÄ± bir ÅŸekilde alÄ±ndÄ±.
+              IncrementSC = 1;
+              //$display("Instruction Register Reg : %d", IROutreg);
+              Rsel = IROut[9:8];
+              //RF_RSel = 4'b0000; anlamadým.
+          end
+          // Memorydeki instructionumuz instruction registera baþarýlý bir þekilde alýndý.
+          $display("Instruction Register : %d", IROut);
+          // Bra iþlemi
+          if (T[2] && D[0]) begin            
+              MuxASel = 2'b11; // IR'nin ilk 8 bitini muxa'nýn çýkýþýna verdik.
+              RF_RegSel = 4'b0011; // Register file'daki r1 ve r2 registerlý açtýk
+              RF_FunSel = 3'b111; // registtera ilk 8 biti yükle son 8 bit sign extend
+              ALU_FunSel = 5'b10100; // A + B 16 bit
+              RF_OutASel = 3'b000; // OUTA'ya R1'i ver 
+              RF_FunSel = 3'b011; // Registerlarý clearla.
+              IncrementSC = 1; // SC'yi 1 artýr.
+          end
+                      
+          if (T[3] && D[0]) begin
+              ARF_OutCSel = 2'b00; // OUTC için PC'yi seçtik
+              MuxASel = 2'b01; // Çýkýþa OUTC'yi verdik.
+              RF_FunSel = 3'b010; // Registerlara loadladýk.
+              RF_OutBSel = 3'b001; // OUTB'ye r2yi verdik.
+              ALU_FunSel = 5'b10100; // A + B 16 bit
+              ARF_FunSel = 3'b011; // Registerlarý clearla. 
+
+              Mem_CS = 1; // disable memory
+              SCReset = 1; // reset counter
       
-      // Bra iÅŸlemi
-      if (T[2] && D[0]) begin            
-        MuxASel = 2'b11; // IR'nin ilk 8 bitini muxa'nÄ±n Ã§Ä±kÄ±ÅŸÄ±na verdik.
-        RF_RegSel = 4'b0011; // Register file'daki r1 ve r2 registerlÄ± aÃ§tÄ±k
-        RF_FunSel = 3'b111; // registtera ilk 8 biti yÃ¼kle son 8 bit sign extend
-        ALU_FunSel = 5'b10100; // A + B 16 bit
-        RF_OutASel = 3'b000; // OUTA'ya R1'i ver 
-        RF_Funsel = 3'b011; // RegisterlarÄ± clearla.
-        IncrementSC = 1; // SC'yi 1 artÄ±r.
-
-    end
-            
-            
-      if (T[3] && D[0]) begin
-          ARF_OutCSel = 2'b00; // OUTC iÃ§in PC'yi seÃ§tik
-          MuxASel = 2'b01; // Ã‡Ä±kÄ±ÅŸa OUTC'yi verdik.
-          RF_FunSel = 3'b010; // Registerlara loadladÄ±k.
-          RF_OutBSel = 3'b001; // OUTB'ye r2yi verdik.
-          ALU_FunSel = 5'b10100; // A + B 16 bit
-          ARF_FunSel = 3'b011; // RegisterlarÄ± clearla. 
-
-          Mem_CS = 1; // disable memory
-          SCReset = 1; // reset counter
-  
+          end
       end
-
-
-      
-    end
-  end
+      end
+                                           
 endmodule
