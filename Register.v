@@ -21,7 +21,7 @@ end
           3'b011: Q = 16'h0000;   // Clear
           3'b100: Q = {8'b0000_0000, I[7:0]}; // Q (15-8) ? Clear, Q (7-0) ? I (7-0) (Write Low)
           3'b101: Q = {Q[15:8], I[7:0]}; // Q (7-0) ? I (7-0) (Only Write Low)
-          3'b110: Q = {I[15:8], Q[7:0]}; // Q (15-8) ? I (7-0) (Only Write High)
+          3'b110: Q = {I[7:0], Q[7:0]}; // Q (15-8) ? I (7-0) (Only Write High)
           3'b111: Q = {{8{I[7]}}, I[7:0]}; // Q (15-8) ? Sign Extend (I (7)), Q (7-0) ? I (7-0) (Write Low)
           default: Q = Q; // Default to no operation
         endcase
